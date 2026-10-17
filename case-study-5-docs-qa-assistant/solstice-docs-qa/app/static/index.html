@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solstice Help</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #F3F5F7; --surface: #FFFFFF; --ink: #17212B; --muted: #5A6573; --line: #D9DEE4;
+    --sun: #C98A0B; --ok: #23784F; --partial: #A86A0C; --none: #5E6875;
+    --ok-wash: #E7F3EC; --partial-wash: #FBF1E0; --none-wash: #ECEEF1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --bg: #12181F; --surface: #1A222B; --ink: #E7ECF1; --muted: #9AA5B1; --line: #2B3540;
+      --sun: #E5AE3A; --ok: #4FB487; --partial: #E0A548; --none: #9AA5B1;
+      --ok-wash: #18302A; --partial-wash: #33281A; --none-wash: #232C36;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 17px/1.55 "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 46rem; margin: 0 auto; padding: 3rem 1.25rem 4rem; }
+  header { display: flex; align-items: center; gap: .75rem; }
+  .mark { width: 30px; height: 30px; border-radius: 50%; flex: none;
+          background: linear-gradient(90deg, var(--sun) 50%, transparent 50%);
+          border: 2px solid var(--sun); }
+  h1 { font-size: 1.6rem; margin: 0; letter-spacing: -.01em; }
+  .lead { color: var(--muted); margin: .6rem 0 1.75rem; max-width: 38rem; }
+  form { display: flex; gap: .5rem; }
+  input[type=text] { flex: 1; font: inherit; color: var(--ink); background: var(--surface);
+          border: 1.5px solid var(--line); border-radius: 10px; padding: .75rem .9rem; }
+  button { font: inherit; cursor: pointer; border-radius: 10px; }
+  .ask { background: var(--ink); color: var(--bg); border: 0; padding: .75rem 1.3rem; font-weight: 700; }
+  .ask:disabled { opacity: .6; cursor: wait; }
+  :focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+  .try { display: flex; flex-wrap: wrap; gap: .4rem; margin: .9rem 0 2rem; align-items: center; color: var(--muted); font-size: .92rem; }
+  .try button { background: transparent; color: var(--ink); border: 1px solid var(--line); padding: .3rem .7rem; font-size: .92rem; }
+  .try button:hover { border-color: var(--muted); }
+  .result { background: var(--surface); border: 1px solid var(--line); border-left: 6px solid var(--none);
+            border-radius: 12px; padding: 1.1rem 1.25rem; margin-bottom: 1.1rem; }
+  .result.answered { border-left-color: var(--ok); }
+  .result.partial { border-left-color: var(--partial); }
+  .q { font-weight: 700; margin: 0 0 .4rem; }
+  .status { display: inline-block; font-size: .85rem; font-weight: 700; padding: .1rem .55rem; border-radius: 6px;
+            background: var(--none-wash); color: var(--none); }
+  .answered .status { background: var(--ok-wash); color: var(--ok); }
+  .partial .status { background: var(--partial-wash); color: var(--partial); }
+  .answer { white-space: pre-line; margin: .7rem 0 0; }
+  h2 { font-size: .95rem; margin: 1.1rem 0 .4rem; color: var(--muted); }
+  ul { margin: 0; padding-left: 1.1rem; }
+  li { margin: .3rem 0; }
+  blockquote { margin: .15rem 0 0; padding-left: .7rem; border-left: 2px solid var(--line); color: var(--muted); font-size: .95rem; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: 1.1rem; font-size: .92rem; color: var(--muted); }
+  .row button { background: transparent; border: 1px solid var(--line); color: var(--ink); padding: .2rem .7rem; }
+  details { margin-top: .9rem; font-size: .88rem; color: var(--muted); }
+  details pre { white-space: pre-wrap; background: var(--bg); padding: .7rem; border-radius: 8px; overflow-x: auto; }
+  .error { color: var(--partial); }
+  @media (max-width: 520px) { form { flex-direction: column; } main { padding-top: 2rem; } }
+  @media (prefers-reduced-motion: no-preference) { .result { animation: in .18s ease-out; }
+    @keyframes in { from { opacity: 0; transform: translateY(4px); } } }
+</style>
+</head>
+<body>
+<main>
+  <header><span class="mark" aria-hidden="true"></span><h1>Solstice Help</h1></header>
+  <p class="lead">Ask about passwords, team invites, CSV exports, billing, SSO or the API.
+    Answers come only from the Solstice documentation, with the source sentence shown.
+    If the docs don't cover your question, you'll be told so.</p>
+
+  <form id="ask-form">
+    <input id="question" type="text" aria-label="Your question" maxlength="500" autocomplete="off"
+           placeholder="For example: how long is a password reset link valid?" required>
+    <button class="ask" id="ask-btn" type="submit">Ask</button>
+  </form>
+
+  <div class="try" id="try"><span>Try:</span></div>
+  <section id="results" aria-live="polite"></section>
+</main>
+
+<script>
+const EXAMPLES = [
+  "How do I reset my password?",
+  "What's the maximum number of rows I can export to CSV?",
+  "What are the API rate limits for the Growth plan?",
+  "Is SSO available on the Growth plan?",
+  "Can I connect Solstice to Salesforce?",
+];
+const STATUS_LABEL = { answered: "Answered from the docs", partial: "Partly covered by the docs", not_covered: "Not in the docs" };
+
+const form = document.getElementById("ask-form");
+const input = document.getElementById("question");
+const btn = document.getElementById("ask-btn");
+const results = document.getElementById("results");
+
+for (const q of EXAMPLES) {
+  const b = document.createElement("button");
+  b.type = "button"; b.textContent = q;
+  b.onclick = () => { input.value = q; ask(q); };
+  document.getElementById("try").appendChild(b);
+}
+
+function el(tag, attrs = {}, ...children) {
+  const node = document.createElement(tag);
+  Object.assign(node, attrs);
+  for (const c of children) if (c != null) node.append(c);
+  return node;
+}
+
+function render(r) {
+  const card = el("article", { className: `result ${r.status}` },
+    el("p", { className: "q" }, r.question),
+    el("span", { className: "status" }, STATUS_LABEL[r.status]),
+    el("p", { className: "answer" }, r.answer));
+
+  if (r.citations.length) {
+    card.append(el("h2", {}, "Sources"));
+    const ul = el("ul");
+    for (const c of r.citations) ul.append(el("li", {}, c.title, el("blockquote", {}, c.text)));
+    card.append(ul);
+  }
+  if (r.status === "not_covered") {
+    if (r.related_docs.length) {
+      card.append(el("h2", {}, "Related articles that may help"));
+      const ul = el("ul");
+      for (const d of r.related_docs) ul.append(el("li", {}, d.title));
+      card.append(ul);
+    }
+    card.append(el("p", { className: "row" }, "Still stuck? Contact Solstice support and we'll help directly."));
+  }
+
+  const fb = el("div", { className: "row" }, "Was this helpful?");
+  for (const [label, helpful] of [["Yes", true], ["No", false]]) {
+    fb.append(el("button", { type: "button", textContent: label, onclick: async () => {
+      await fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: r.question, status: r.status, helpful }) });
+      fb.replaceChildren("Feedback recorded. Thank you.");
+    }}));
+  }
+  card.append(fb);
+
+  const checks = { mode: r.mode, decision: r.reason, latency_ms: r.latency_ms,
+                   gate1: r.debug.gate1, gate2: r.debug.gate2, retrieved: r.debug.hits };
+  card.append(el("details", {}, el("summary", {}, "How this answer was checked"),
+                 el("pre", {}, JSON.stringify(checks, null, 2))));
+  results.prepend(card);
+}
+
+async function ask(question) {
+  btn.disabled = true; btn.textContent = "Searching…";
+  try {
+    const res = await fetch("/api/ask?debug=true", { method: "POST",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question }) });
+    if (!res.ok) {
+      const detail = res.status === 422 ? "Questions need 3 to 500 characters." : `The server returned ${res.status}.`;
+      throw new Error(detail);
+    }
+    render(await res.json());
+  } catch (err) {
+    results.prepend(el("p", { className: "error" },
+      err.message.startsWith("Questions") || err.message.startsWith("The server")
+        ? err.message : "Couldn't reach the server. Check that the API is running, then try again."));
+  } finally {
+    btn.disabled = false; btn.textContent = "Ask";
+  }
+}
+
+form.addEventListener("submit", (e) => { e.preventDefault(); if (input.value.trim()) ask(input.value.trim()); });
+</script>
+</body>
+</html>
