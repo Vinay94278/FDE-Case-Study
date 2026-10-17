@@ -1,0 +1,18 @@
+{
+  "about": "Maintained by the support team. 'synonyms' maps documentation wording (key) to the words admins use (values). 'key_entities' are specific names a question can mention; if an answer passage does not mention a named entity, the answer is reported as partial.",
+  "version": "1",
+  "synonyms": {
+    "invite": ["add a new user", "add new user", "add a user", "add user", "add someone", "add a new member", "add a member"],
+    "team member": ["teammate", "colleague", "coworker", "co-worker"],
+    "retained": ["kept", "stored", "available for download"],
+    "exceeding": ["go over", "going over", "goes over", "exceed", "over the limit"],
+    "single sign-on": ["single sign on"]
+  },
+  "key_entities": {
+    "plans": ["growth", "enterprise", "starter", "free", "basic", "pro", "premium"],
+    "billing_terms": ["monthly", "annual", "annually", "yearly"],
+    "file_formats": ["csv", "pdf", "excel", "xlsx", "json", "xml"],
+    "integrations": ["salesforce", "slack", "hubspot", "zapier", "workday", "okta"],
+    "platforms": ["mobile", "ios", "android"]
+  }
+}

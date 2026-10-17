@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solstice Help</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #F3F5F7; --surface: #FFFFFF; --ink: #17212B; --muted: #5A6573; --line: #D9DEE4;
+    --sun: #C98A0B; --ok: #23784F; --partial: #A86A0C; --none: #5E6875;
+    --ok-wash: #E7F3EC; --partial-wash: #FBF1E0; --none-wash: #ECEEF1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --bg: #12181F; --surface: #1A222B; --ink: #E7ECF1; --muted: #9AA5B1; --line: #2B3540;
+      --sun: #E5AE3A; --ok: #4FB487; --partial: #E0A548; --none: #9AA5B1;
+      --ok-wash: #18302A; --partial-wash: #33281A; --none-wash: #232C36;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 17px/1.55 "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 46rem; margin: 0 auto; padding: 3rem 1.25rem 4rem; }
+  header { display: flex; align-items: center; gap: .75rem; }
+  .mark { width: 30px; height: 30px; border-radius: 50%; flex: none;
+          background: linear-gradient(90deg, var(--sun) 50%, transparent 50%); border: 2px solid var(--sun); }
+  h1 { font-size: 1.6rem; margin: 0; letter-spacing: -.01em; }
+  .lead { color: var(--muted); margin: .6rem 0 1.75rem; max-width: 38rem; }
+  form { display: flex; gap: .5rem; }
+  input[type=text] { flex: 1; font: inherit; color: var(--ink); background: var(--surface);
+          border: 1.5px solid var(--line); border-radius: 10px; padding: .75rem .9rem; }
+  button { font: inherit; cursor: pointer; border-radius: 10px; }
+  .ask { background: var(--ink); color: var(--bg); border: 0; padding: .75rem 1.3rem; font-weight: 700; }
+  .ask:disabled { opacity: .6; cursor: wait; }
+  :focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: .4rem; margin: .9rem 0 2rem; align-items: center;
+             color: var(--muted); font-size: .92rem; }
+  .toolbar button { background: transparent; color: var(--ink); border: 1px solid var(--line);
+                    padding: .3rem .7rem; font-size: .92rem; }
+  .toolbar button:hover { border-color: var(--muted); }
+  .toolbar .reset { margin-left: auto; }
+  .result { background: var(--surface); border: 1px solid var(--line); border-left: 6px solid var(--none);
+            border-radius: 12px; padding: 1.1rem 1.25rem; margin-bottom: 1.1rem; }
+  .result.answered { border-left-color: var(--ok); }
+  .result.partial { border-left-color: var(--partial); }
+  .q { font-weight: 700; margin: 0 0 .2rem; }
+  .searched { color: var(--muted); font-size: .9rem; margin: 0 0 .4rem; }
+  .status { display: inline-block; font-size: .85rem; font-weight: 700; padding: .1rem .55rem;
+            border-radius: 6px; background: var(--none-wash); color: var(--none); }
+  .answered .status { background: var(--ok-wash); color: var(--ok); }
+  .partial .status { background: var(--partial-wash); color: var(--partial); }
+  .kind { font-size: .85rem; color: var(--muted); margin-left: .5rem; }
+  .answer { white-space: pre-line; margin: .7rem 0 0; }
+  .missing { margin: .6rem 0 0; color: var(--partial); }
+  h2 { font-size: .95rem; margin: 1.1rem 0 .4rem; color: var(--muted); }
+  ul { margin: 0; padding-left: 1.1rem; }
+  li { margin: .3rem 0; }
+  blockquote { margin: .15rem 0 0; padding-left: .7rem; border-left: 2px solid var(--line);
+               color: var(--muted); font-size: .95rem; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: 1.1rem;
+         font-size: .92rem; color: var(--muted); }
+  .row button { background: transparent; border: 1px solid var(--line); color: var(--ink); padding: .2rem .7rem; }
+  details { margin-top: .9rem; font-size: .88rem; color: var(--muted); }
+  details pre { white-space: pre-wrap; background: var(--bg); padding: .7rem; border-radius: 8px; overflow-x: auto; }
+  .error { color: var(--partial); }
+  @media (max-width: 520px) { form { flex-direction: column; } main { padding-top: 2rem; } }
+  @media (prefers-reduced-motion: no-preference) {
+    .result { animation: appear .18s ease-out; }
+    @keyframes appear { from { opacity: 0; transform: translateY(4px); } }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header><span class="mark" aria-hidden="true"></span><h1>Solstice Help</h1></header>
+  <p class="lead">Ask about passwords, team invites, CSV exports, billing, SSO or the API.
+    Answers come only from the Solstice documentation, with the source sentence shown.
+    You can ask follow-up questions. If the docs don't cover something, you'll be told so.</p>
+
+  <form id="ask-form">
+    <input id="question" type="text" maxlength="500" autocomplete="off" aria-label="Your question"
+           placeholder="For example: how long is a password reset link valid?" required>
+    <button class="ask" id="ask-button" type="submit">Ask</button>
+  </form>
+
+  <div class="toolbar" id="toolbar">
+    <span>Try:</span>
+    <button type="button" class="reset" id="reset-button">New conversation</button>
+  </div>
+  <section id="results" aria-live="polite"></section>
+</main>
+
+<script>
+const API_BASE = "/api/v1";
+const MAX_HISTORY_TURNS = 3;
+const EXAMPLE_QUESTIONS = [
+  "How do I reset my password?",
+  "What are the API rate limits for the Growth plan?",
+  "Is SSO available on the Growth plan?",
+  "Can I connect Solstice to Salesforce?",
+];
+const STATUS_LABELS = {
+  answered: "Answered from the docs",
+  partial: "Partly covered by the docs",
+  not_covered: "Not in the docs",
+};
+const ANSWER_TYPE_LABELS = {
+  generated_answer: "Answer written from the cited sentences",
+  verbatim_passage: "Most relevant passage, quoted from the docs",
+  refusal: "",
+};
+
+const askForm = document.getElementById("ask-form");
+const questionInput = document.getElementById("question");
+const askButton = document.getElementById("ask-button");
+const resultsSection = document.getElementById("results");
+const toolbar = document.getElementById("toolbar");
+const resetButton = document.getElementById("reset-button");
+
+let conversationHistory = [];
+
+function createElement(tagName, properties, children) {
+  const element = document.createElement(tagName);
+  Object.assign(element, properties);
+  for (const child of children) {
+    if (child !== null && child !== undefined) {
+      element.append(child);
+    }
+  }
+  return element;
+}
+
+function addExampleButtons() {
+  for (const exampleQuestion of EXAMPLE_QUESTIONS) {
+    const exampleButton = createElement("button", { type: "button", textContent: exampleQuestion }, []);
+    exampleButton.addEventListener("click", function () {
+      questionInput.value = exampleQuestion;
+      askQuestion(exampleQuestion);
+    });
+    toolbar.insertBefore(exampleButton, resetButton);
+  }
+}
+
+function rememberTurn(answerData) {
+  conversationHistory.push({ question: answerData.question, answer: answerData.answer });
+  if (conversationHistory.length > MAX_HISTORY_TURNS) {
+    conversationHistory = conversationHistory.slice(-MAX_HISTORY_TURNS);
+  }
+}
+
+function buildCitationList(citations) {
+  const citationList = createElement("ul", {}, []);
+  for (const citation of citations) {
+    const quote = createElement("blockquote", {}, [citation.text]);
+    citationList.append(createElement("li", {}, [citation.title, quote]));
+  }
+  return citationList;
+}
+
+function buildRelatedList(relatedDocuments) {
+  const relatedList = createElement("ul", {}, []);
+  for (const relatedDocument of relatedDocuments) {
+    relatedList.append(createElement("li", {}, [relatedDocument.title]));
+  }
+  return relatedList;
+}
+
+function buildFeedbackRow(answerData) {
+  const feedbackRow = createElement("div", { className: "row" }, ["Was this helpful?"]);
+  const feedbackChoices = [["Yes", true], ["No", false]];
+  for (const feedbackChoice of feedbackChoices) {
+    const choiceButton = createElement("button", { type: "button", textContent: feedbackChoice[0] }, []);
+    choiceButton.addEventListener("click", async function () {
+      const feedbackBody = {
+        question: answerData.question,
+        answer_status: answerData.answer_status,
+        helpful: feedbackChoice[1],
+      };
+      const envelope = await callApi("/feedback", feedbackBody);
+      if (envelope.status === "success") {
+        feedbackRow.replaceChildren("Feedback recorded. Thank you.");
+      } else {
+        feedbackRow.replaceChildren(envelope.message);
+      }
+    });
+    feedbackRow.append(choiceButton);
+  }
+  return feedbackRow;
+}
+
+function renderAnswer(answerData) {
+  const card = createElement("article", { className: "result " + answerData.answer_status }, [
+    createElement("p", { className: "q" }, [answerData.question]),
+  ]);
+
+  if (answerData.standalone_question) {
+    card.append(createElement("p", { className: "searched" }, ["Searched for: " + answerData.standalone_question]));
+  }
+
+  card.append(createElement("span", { className: "status" }, [STATUS_LABELS[answerData.answer_status]]));
+  const answerTypeLabel = ANSWER_TYPE_LABELS[answerData.answer_type];
+  if (answerTypeLabel) {
+    card.append(createElement("span", { className: "kind" }, [answerTypeLabel]));
+  }
+  card.append(createElement("p", { className: "answer" }, [answerData.answer]));
+
+  if (answerData.missing_information) {
+    card.append(createElement("p", { className: "missing" }, ["Not covered: " + answerData.missing_information]));
+  }
+  if (answerData.citations.length > 0) {
+    card.append(createElement("h2", {}, ["Sources"]));
+    card.append(buildCitationList(answerData.citations));
+  }
+  if (answerData.related_documents.length > 0) {
+    card.append(createElement("h2", {}, ["Related articles that may help"]));
+    card.append(buildRelatedList(answerData.related_documents));
+  }
+  if (answerData.answer_status === "not_covered") {
+    card.append(createElement("p", { className: "row" }, ["Still stuck? Contact Solstice support and we'll help directly."]));
+  }
+
+  card.append(buildFeedbackRow(answerData));
+
+  const checkDetails = {
+    mode: answerData.mode,
+    decision: answerData.decision_reason,
+    latency_ms: answerData.latency_ms,
+    debug: answerData.debug,
+  };
+  const detailsElement = createElement("details", {}, [
+    createElement("summary", {}, ["How this answer was checked"]),
+    createElement("pre", {}, [JSON.stringify(checkDetails, null, 2)]),
+  ]);
+  card.append(detailsElement);
+  resultsSection.prepend(card);
+}
+
+function renderError(errorMessage) {
+  resultsSection.prepend(createElement("p", { className: "error" }, [errorMessage]));
+}
+
+async function callApi(path, requestBody) {
+  try {
+    const httpResponse = await fetch(API_BASE + path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestBody),
+    });
+    return await httpResponse.json();
+  } catch (networkError) {
+    return {
+      status: "error",
+      message: "Couldn't reach the server. Check that the API is running, then try again.",
+    };
+  }
+}
+
+async function askQuestion(questionText) {
+  askButton.disabled = true;
+  askButton.textContent = "Searching…";
+  try {
+    const envelope = await callApi("/ask", {
+      question: questionText,
+      conversation_history: conversationHistory,
+      include_debug: true,
+    });
+    if (envelope.status === "success") {
+      renderAnswer(envelope.data);
+      rememberTurn(envelope.data);
+    } else {
+      renderError(envelope.message);
+    }
+  } finally {
+    askButton.disabled = false;
+    askButton.textContent = "Ask";
+  }
+}
+
+askForm.addEventListener("submit", function (submitEvent) {
+  submitEvent.preventDefault();
+  const questionText = questionInput.value.trim();
+  if (questionText !== "") {
+    askQuestion(questionText);
+  }
+});
+
+resetButton.addEventListener("click", function () {
+  conversationHistory = [];
+  resultsSection.replaceChildren();
+  questionInput.focus();
+});
+
+addExampleButtons();
+</script>
+</body>
+</html>
