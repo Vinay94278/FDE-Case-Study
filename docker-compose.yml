@@ -1,0 +1,20 @@
+# Local run:  docker compose up --build   then open http://localhost:8000
+services:
+  docs-qa:
+    build:
+      context: .
+      args:
+        INSTALL_EMBEDDINGS: "false"
+    env_file:
+      - .env
+    environment:
+      LOG_FORMAT: text
+      EXPOSE_TECHNICAL_MESSAGES: "true"
+    ports:
+      - "8000:8000"
+    volumes:
+      - query-logs:/app/logs
+    restart: unless-stopped
+
+volumes:
+  query-logs:
