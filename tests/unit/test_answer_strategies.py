@@ -169,6 +169,29 @@ def test_extractive_refuses_out_of_scope():
     assert response.answer_type == "refusal"
 
 
+def test_eval_rate_limiter_waits_before_21st_call(monkeypatch):
+    from collections import deque
+
+    from eval.run_eval import wait_for_llm_rate_limit
+
+    sleep_calls = []
+    current_time = [100.0]
+
+    def fake_sleep(seconds):
+        sleep_calls.append(seconds)
+        current_time[0] += seconds
+
+    monkeypatch.setattr("eval.run_eval.time.monotonic", lambda: current_time[0])
+    monkeypatch.setattr("eval.run_eval.time.sleep", fake_sleep)
+
+    recent_calls = deque([41.0 + (i * 3) for i in range(20)])
+    wait_for_llm_rate_limit(recent_calls, max_calls_per_minute=10, window_seconds=60.0)
+
+    assert sleep_calls
+    assert len(recent_calls) == 20
+    assert recent_calls[-1] >= 100.0
+
+
 def test_followup_without_llm_uses_question_as_typed():
     history = [{"question": "How do I reset my password?", "answer": "Use Forgot password."}]
     response = ask_question(EXTRACTIVE_CONTAINER, "How long is a password reset link valid?", history)

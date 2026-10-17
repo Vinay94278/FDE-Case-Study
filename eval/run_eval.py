@@ -15,6 +15,7 @@ import json
 import statistics
 import sys
 import time
+from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Set
@@ -92,6 +93,31 @@ def build_request_dto(eval_item: dict) -> AskRequestDTO:
     return AskRequestDTO(question=eval_item["question"], conversation_history=history_dtos)
 
 
+def wait_for_llm_rate_limit(call_history: deque, max_calls_per_minute: int = 10, window_seconds: float = 60.0) -> None:
+    """Pace eval calls so we do not exceed the provider's rate limit.
+
+    Groq allows 20 calls per minute. This helper keeps a rolling window and sleeps
+    until there is capacity for the next call. It keeps the eval run stable without
+    turning the LLM into a series of authentication failures.
+    """
+    if max_calls_per_minute <= 0:
+        return
+
+    now = time.monotonic()
+    while call_history and (now - call_history[0]) >= window_seconds:
+        call_history.popleft()
+
+    if len(call_history) >= max_calls_per_minute:
+        wait_for = window_seconds - (now - call_history[0])
+        if wait_for > 0:
+            time.sleep(wait_for + 0.05)
+        now = time.monotonic()
+        while call_history and (now - call_history[0]) >= window_seconds:
+            call_history.popleft()
+
+    call_history.append(time.monotonic())
+
+
 def build_outcome(eval_item: dict, actual_status: str, mode: str, decision_reason: str,
                   passed: bool, note: str, latency_ms: int) -> QuestionOutcome:
     is_answerable = ANSWERED in eval_item["expected_statuses"]
@@ -114,7 +140,9 @@ def build_outcome(eval_item: dict, actual_status: str, mode: str, decision_reaso
 
 async def run_service_once(container: ApplicationContainer, eval_items: List[dict]) -> List[QuestionOutcome]:
     outcomes = []
+    llm_call_history = deque()
     for eval_item in eval_items:
+        wait_for_llm_rate_limit(llm_call_history)
         request_dto = build_request_dto(eval_item)
         response_dto = await container.question_answering_service.answer_question(request_dto)
         cited_doc_ids = set()

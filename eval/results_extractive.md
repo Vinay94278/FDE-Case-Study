@@ -2,15 +2,15 @@
 
 - Mode: extractive
 - Runs: 1
-- Run 1, all: pass 33/38, answered an unanswerable question 2/15, false refusals 2/23, LLM unavailable 0
-- Run 1, dev: pass 24/25, answered an unanswerable question 0/10, false refusals 0/15, LLM unavailable 0
+- Run 1, all: pass 34/38, answered an unanswerable question 2/15, false refusals 2/23, LLM unavailable 0
+- Run 1, dev: pass 25/25, answered an unanswerable question 0/10, false refusals 0/15, LLM unavailable 0
 - Run 1, test: pass 9/13, answered an unanswerable question 2/5, false refusals 2/8, LLM unavailable 0
-- Latency p50 / max (last run): 1 ms / 3 ms
+- Latency p50 / max (last run): 34 ms / 76 ms
 - Skipped in this mode (need an LLM): F-01, F-02, F-03, F-04
 
 | ID | Split | Category | Question | Expected | Got | Mode | Result | Reason / note |
 |---|---|---|---|---|---|---|---|---|
-| Q-1 | dev | provided | How do I reset my password? | answered | answered | extractive | FAIL | extractive_best_sentences: key fact missing (Forgot password) |
+| Q-1 | dev | provided | How do I reset my password? | answered | answered | extractive | PASS | extractive_best_sentences |
 | Q-2 | dev | provided | How long do I have to use a password reset link before it expires? | answered | answered | extractive | PASS | extractive_best_sentences |
 | Q-3 | dev | provided | What's the maximum number of rows I can export to CSV? | answered | answered | extractive | PASS | extractive_best_sentences |
 | Q-4 | dev | provided | What are the API rate limits for the Growth plan? | answered | answered | extractive | PASS | extractive_best_sentences |
