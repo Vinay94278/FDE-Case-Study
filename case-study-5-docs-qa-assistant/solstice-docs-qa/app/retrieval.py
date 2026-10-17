@@ -14,6 +14,8 @@ import math
 from collections import Counter
 from dataclasses import dataclass
 
+from typing import Optional
+
 from .ingest import Chunk
 from .textproc import terms
 
@@ -77,7 +79,7 @@ class Hit:
     chunk: Chunk
     rrf: float
     bm25: float
-    cosine: float | None
+    cosine: Optional[float]
     term_coverage: float  # share of the question's informative terms found in this chunk
 
 

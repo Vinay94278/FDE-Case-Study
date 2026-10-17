@@ -13,6 +13,7 @@ answer (best-matching sentences, verbatim), with a stricter Gate 1.
 """
 import re
 import time
+from typing import Optional
 
 from .config import Settings
 from .ingest import build_corpus, load_docs
@@ -121,7 +122,7 @@ class QAService:
             return True, f"pass: cosine {best_cos} >= {self.settings.min_cosine}"
         return False, f"fail: term_coverage {best_cov} < {min_coverage}, cosine {best_cos}"
 
-    def _verify(self, answer: str, citations: list[str], context_ids: set[str]) -> str | None:
+    def _verify(self, answer: str, citations: list[str], context_ids: set[str]) -> Optional[str]:
         """Gate 2. Returns a failure reason, or None if the answer is grounded."""
         if not answer:
             return "empty_answer"

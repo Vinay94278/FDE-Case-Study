@@ -1,15 +1,15 @@
 # Eval results: extractive
 
 - Mode: extractive
-- Overall pass: 16/25
+- Overall pass: 17/25
 - Answered an unanswerable question (hallucination risk): 4/10
 - Refused an answerable question (false refusal): 3/15
 - LLM failures that fell back to extractive: 0
-- Latency p50 / max: 0 ms / 1 ms
+- Latency p50 / max: 18 ms / 54 ms
 
 | ID | Category | Question | Expected | Got | Result | Notes |
 |---|---|---|---|---|---|---|
-| Q-1 | provided | How do I reset my password? | answered | answered | FAIL | answer missing key fact (Forgot password) |
+| Q-1 | provided | How do I reset my password? | answered | answered | PASS | extractive_best_sentences |
 | Q-2 | provided | How long do I have to use a password reset link before it expires? | answered | answered | PASS | extractive_best_sentences |
 | Q-3 | provided | What's the maximum number of rows I can export to CSV? | answered | answered | PASS | extractive_best_sentences |
 | Q-4 | provided | What are the API rate limits for the Growth plan? | answered | answered | PASS | extractive_best_sentences |

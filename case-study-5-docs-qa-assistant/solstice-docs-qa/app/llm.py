@@ -60,6 +60,35 @@ class OpenAICompatibleLLM:
         return parse_json_object(content)
 
 
+class GroqLLM:
+    def __init__(self, client, model: str, max_tokens: int, name: str):
+        self.client = client
+        self.model = model
+        self.max_tokens = max_tokens
+        self.name = name
+
+    def complete_json(self, system: str, user: str) -> dict:
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ]
+        kwargs = dict(
+            model=self.model,
+            messages=messages,
+            temperature=0,
+            max_completion_tokens=self.max_tokens,
+            top_p=1,
+            stream=False,
+            stop=None,
+        )
+        try:
+            resp = self.client.chat.completions.create(**kwargs)
+            content = resp.choices[0].message.content
+        except Exception as exc:
+            raise LLMError(f"{type(exc).__name__}: {exc}") from exc
+        return parse_json_object(content)
+
+
 def build_llm(settings: Settings):
     """Return an LLM client, or None for extractive-only mode."""
     provider = settings.llm_provider
@@ -82,13 +111,23 @@ def build_llm(settings: Settings):
             timeout=settings.llm_timeout_s,
             max_retries=1,
         )
-    elif provider in {"groq", "openai_compatible"}:
+        return OpenAICompatibleLLM(client, settings.llm_model, settings.llm_max_tokens, f"{provider}:{settings.llm_model}")
+
+    if provider == "groq":
+        try:
+            from groq import Groq
+        except ImportError as exc:
+            raise ImportError("groq package is required for LLM_PROVIDER=groq") from exc
+        client = Groq(api_key=settings.llm_api_key, timeout=settings.llm_timeout_s, max_retries=1)
+        return GroqLLM(client, settings.llm_model, settings.llm_max_tokens, f"{provider}:{settings.llm_model}")
+
+    if provider == "openai_compatible":
         client = openai.OpenAI(
             base_url=settings.llm_base_url or None,
             api_key=settings.llm_api_key,
             timeout=settings.llm_timeout_s,
             max_retries=1,
         )
-    else:
-        raise ValueError(f"Unknown LLM_PROVIDER: {provider}")
-    return OpenAICompatibleLLM(client, settings.llm_model, settings.llm_max_tokens, f"{provider}:{settings.llm_model}")
+        return OpenAICompatibleLLM(client, settings.llm_model, settings.llm_max_tokens, f"{provider}:{settings.llm_model}")
+
+    raise ValueError(f"Unknown LLM_PROVIDER: {provider}")

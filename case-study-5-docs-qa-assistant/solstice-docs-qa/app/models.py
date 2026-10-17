@@ -1,5 +1,5 @@
 """API request/response schemas."""
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -46,4 +46,4 @@ class FeedbackRequest(BaseModel):
     question: str = Field(..., max_length=500)
     status: Status
     helpful: bool
-    comment: str | None = Field(default=None, max_length=500)
+    comment: Optional[str] = Field(default=None, max_length=500)
