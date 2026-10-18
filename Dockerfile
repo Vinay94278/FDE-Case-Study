@@ -1,8 +1,8 @@
 # Solstice Docs Q&A - production image
 FROM python:3.11-slim
 
-# Set INSTALL_EMBEDDINGS=true to add semantic search (adds PyTorch, a much larger image)
-ARG INSTALL_EMBEDDINGS=false
+# Set INSTALL_EMBEDDINGS=false to omit semantic search.
+ARG INSTALL_EMBEDDINGS=true
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -14,7 +14,10 @@ WORKDIR /app
 
 COPY requirements.txt requirements-embeddings.txt ./
 RUN pip install --no-cache-dir -r requirements.txt \
-    && if [ "$INSTALL_EMBEDDINGS" = "true" ]; then pip install --no-cache-dir -r requirements-embeddings.txt; fi
+    && if [ "$INSTALL_EMBEDDINGS" = "true" ]; then \
+        pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch \
+        && pip install --no-cache-dir -r requirements-embeddings.txt; \
+    fi
 
 COPY app ./app
 COPY data ./data
