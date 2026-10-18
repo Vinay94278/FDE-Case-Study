@@ -26,7 +26,6 @@ Contents
 | Decide how to search across documents for the right passage | Sentence-aware chunking (fixes the starter kit's lost text), BM25 + embeddings, glossary synonyms |
 | Decide how confident an answer must be before showing it | Measurable gates with explicit thresholds, plus a third outcome: `partial` |
 | Decide whether to use an LLM at all | Both modes built and measured on the same questions; the gap between them is the justification |
-| Run end-to-end on the provided questions with a clear answer or honest "I don't know" | `python -m eval.answer_provided_questions` prints every answer with sources |
 | Document assumptions | `SOLUTION_DESIGN.md` (business) and section 9 here (code) |
 | Smaller, well-reasoned scope | Core vs extensions labelled in `SOLUTION_DESIGN.md` |
 
@@ -206,21 +205,24 @@ Remaining limits, visible on the held-out test split: unseen vocabulary ("minimu
 | 11 | Eval table hid the mode, so the fallback cause of E-12 was invisible | Reading v1 results | Mode and answer columns; `--runs`; dev/test split |
 | 12 | Eval questions written by us invite overfitting | Design review | 13 held-out test questions written before tuning, never tuned on |
 | 13 | Flat module structure, inconsistent error bodies | Review for production | Layered structure, one envelope, central exception handling |
-| 14 | No way to see the actual answers to the 5 provided questions | Re-reading the brief | `eval/answer_provided_questions.py` |
 
 ---
 
 ## 6. Results
 
-| Mode | Dev (25) | Test (13 + 4 follow-ups) | Answered an unanswerable question | Latency p50 |
-|---|---|---|---|---|
-| Starter kit | 4 | 6 of 13 | 15 of 15 | <1 ms |
-| Extractive v1 | 17 | not measured | 4 of 10 | ~20 ms |
-| Extractive v2 (with embeddings) | 25 | 9 of 13 (follow-ups need an LLM) | 2 of 15 | 34 ms |
-| LLM v1 (Groq gpt-oss-20b) | 24 | not measured | 1 of 10 | 1.5 s |
-| LLM v2 (Groq gpt-oss-20b), 3 runs | 25, 25, 25 | 17, 17, 17 | 0 of 16 in every run | 0.5-0.6 s |
+The v1 evaluation was a single 25-question set, without separate development and test splits. For v2, 13 entirely new questions were added as a held-out test set alongside the 25-question dev set. The dev set was used during development and tuning; the test set was not. These are evaluation splits, not model-training data. The four follow-up cases are additional LLM-only checks, beyond the 25 + 13 core questions.
 
-How to read this honestly: 42/42 on a 42-question set we wrote ourselves is strong evidence the design works, not proof it is perfect. The set is small and partly shaped by our own design choices. The next step is real admin questions from Elena's ticket history.
+| Version / mode | v1 single set / v2 dev (25) | Held-out test (13) | LLM-only follow-ups (4) | Total and run consistency |
+|---|---:|---:|---:|---|
+| Starter kit (v2 evaluation set) | 4/25 | 6/13 | not run | 10/38 |
+| Extractive v1 | 17/25 | not measured | not run | 17/25 on the single v1 set |
+| LLM v1 (Groq gpt-oss-20b) | 24/25 | not measured | not run | 24/25 on the single v1 set |
+| Extractive v2 | 25/25 | 9/13 (4 failed) | not applicable | 34/38; follow-ups require an LLM |
+| LLM v2 (Groq gpt-oss-20b) | 25/25 | 13/13 | 4/4 | 42/42 in each of 3 runs |
+
+For v1 extractive, 4/10 unanswerable questions were answered and 3/15 answerable questions were falsely refused; v1 LLM answered 1/10 unanswerable questions and falsely refused 0/15, with one LLM failure falling back to extractive. For v2 extractive, the 2 answered-unanswerable questions were both in the held-out test set (2/5 there; 0/10 on dev); it also falsely refused 2/23 answerable questions. For v2 LLM, every run answered 0/16 unanswerable questions and falsely refused 0/26 answerable questions. Run 3's p50 / max latency was 584 ms / 1215 ms. The v1 extractive and LLM results are from their original, unsplit 25-question evaluation; no v1 held-out test result is available.
+
+The v1 extractive score of 17/25 is from its original unsplit set; v2 scored 25/25 on dev and 9/13 on the newly introduced held-out test. The four held-out misses show the limit of tuning on a small dev set: unseen vocabulary ("minimum length", "protocol") causes false refusals, and questions about limits the docs do not specify ("how many members can I invite?") can be answered with the nearest passage. LLM v2 scored 42/42 on each run, including the four follow-ups. Caveat: we wrote these 42 questions ourselves, so 42/42 is evidence the design works, not proof. Real admin questions from Elena's ticket history are the next step.
 
 ---
 
@@ -289,27 +291,20 @@ flowchart LR
 
 | Addition | v2 problem it solves | Plugs in at |
 |---|---|---|
-| Docs-site / CMS connector, SharePoint, MarkItDown | Docs only come from one JSON file | New `DocumentSourceDAO` classes (registry) |
-| Ingestion worker, content hash, versioned index | Index rebuilt at every startup; no live updates | `CorpusBuilder` moved out of the API process |
-| Postgres + pgvector + full-text | In-memory corpus does not scale or survive restarts | New `CorpusDAO` implementation |
-| Document permissions in the index | Internal SharePoint content could leak to the wrong users | Filter in retrieval by the user's groups |
-| Heading-aware chunks | Citations name the article, not the section | Chunker |
+| Postgres + pgvector | In-memory index is lost on restart and becomes a constraint as the corpus grows | New `CorpusDAO` implementation |
+| Ingestion worker + content hash | Index rebuilt at every startup; no live updates | `CorpusBuilder` moved out of the API process |
 | Cross-encoder reranker | Embedding cosine is a weak, uncalibrated relevance signal | After hybrid search |
 | Entailment (NLI) check | Layer 3 verifies numbers and citations, not every claim | Grounding verifier |
-| Verified FAQ answers | Repeated questions pay LLM cost and latency every time | Before the answer strategy |
-| Redis answer cache | Same | Service, keyed by question and index version |
-| Entra ID auth, gateway rate limits | API is open | Gateway / middleware |
-| Token and cost tracking | No cost visibility per question | LLM client wrapper |
-| Overall request time budget | Worst case is rewrite + 2 answer attempts at 20 s each | Service |
+| Entra ID auth + rate limits | API is open | Gateway / middleware |
 | Eval in CI on real ticket questions | Eval set written by us | GitHub Actions |
-| Admin console | Glossary and gap report need a developer | New UI on existing endpoints |
-| Postgres query log | JSONL file is single-process | New `QueryLogDAO` implementation |
+
+Beyond these, likely additions are a docs-site/SharePoint connector for live content, an admin console for glossary and gaps, and token/cost tracking per question; see [SOLUTION_DESIGN.md](SOLUTION_DESIGN.md) §6.
 
 ### 8.3 Suggested phases
 
-1. **Production hardening:** Azure OpenAI in the client tenant, auth, rate limits, Postgres query log, OpenTelemetry, token and cost tracking, overall time budget, CI.
-2. **Real content at scale:** docs-site connector, ingestion worker, pgvector, heading-aware chunks, reranker.
-3. **Quality loop:** real ticket questions as the eval set, verified FAQ layer, entailment check, admin console for glossary and gaps.
+1. **Harden for production:** Azure OpenAI in the client tenant, auth, rate limits, Postgres query log, CI.
+2. **Scale content:** docs-site connector, ingestion worker, pgvector, reranker.
+3. **Improve quality:** real ticket questions as the eval set, entailment check.
 
 ---
 
@@ -358,7 +353,7 @@ flowchart LR
 **Evaluation**
 - A question passes if its status is one of the expected ones, an answered status cites all expected articles (partial: at least one), and the answer contains at least one key phrase.
 - Follow-up cases are skipped in extractive mode.
-- The judge checks key phrases, not answer quality: Q-1 in extractive mode without embeddings returns the link-expiry sentences rather than the reset steps. `answer_provided_questions.py` exists so a human reads the answers.
+- The judge checks key phrases, not answer quality: Q-1 in extractive mode without embeddings returns the link-expiry sentences rather than the reset steps.
 
 ---
 

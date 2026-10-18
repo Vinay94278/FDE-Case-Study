@@ -42,6 +42,10 @@ python -m eval.run_eval --split test            # held-out questions only
 
 Each run writes `eval/results_<mode>.md` with a mode column per question. v1 results are kept in `eval/v1_results/`.
 
+### Results snapshot
+
+v1 used a single 25-question evaluation set (no dev/test split): extractive scored 17/25 and LLM scored 24/25. For v2, the 25-question dev set was used during development and tuning, and 13 entirely new questions formed a held-out test set; these are evaluation splits, not model training data. Extractive scored 25/25 on dev and 9/13 on test (four test misses). LLM scored 25/25 on dev and 13/13 on test, plus 4/4 LLM-only follow-ups, in each of 3 runs (42/42 overall per run). The third run's latency was 584 ms p50 / 1215 ms max. Full details: [SOLUTION_DESIGN.md](SOLUTION_DESIGN.md), [ARCHITECTURE.md](ARCHITECTURE.md), and the [evaluation results](eval/).
+
 ## API
 
 Every endpoint returns the same envelope, success or error:
@@ -55,7 +59,7 @@ Every endpoint returns the same envelope, success or error:
   "error_code": null,
   "data": { "...endpoint-specific DTO..." },
   "request_id": "a1b2c3d4e5f6a7b8",
-  "timestamp": "2026-10-18T10:00:00+00:00"
+  "timestamp": "2025-01-01T10:00:00+00:00"
 }
 ```
 
@@ -116,7 +120,7 @@ Settings come from (highest first): real environment variables, `.env`, defaults
 ## Known limitations
 
 - English only. Follow-ups need an LLM; without one each question is answered on its own.
-- Extractive mode generalises less well than LLM mode (dev 24/25 vs held-out test 9/13).
+- Extractive mode scored 25/25 on the v2 dev set but 9/13 on the held-out test set; v1 extractive scored 17/25 on its single unsplit set.
 - Grounding verification checks citations and numbers, not every possible wording error.
 - The corpus is rebuilt in memory at startup; no live re-indexing yet.
 - No authentication or rate limiting on the API yet.

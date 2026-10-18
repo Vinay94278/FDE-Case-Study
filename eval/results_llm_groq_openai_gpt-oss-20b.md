@@ -1,15 +1,18 @@
 # Eval results: llm_groq_openai_gpt-oss-20b
 
 - Mode: llm_groq_openai_gpt-oss-20b
-- Runs: 2
+- Runs: 3
 - Run 1, all: pass 42/42, answered an unanswerable question 0/16, false refusals 0/26, LLM unavailable 0
 - Run 1, dev: pass 25/25, answered an unanswerable question 0/10, false refusals 0/15, LLM unavailable 0
 - Run 1, test: pass 17/17, answered an unanswerable question 0/6, false refusals 0/11, LLM unavailable 0
 - Run 2, all: pass 42/42, answered an unanswerable question 0/16, false refusals 0/26, LLM unavailable 0
 - Run 2, dev: pass 25/25, answered an unanswerable question 0/10, false refusals 0/15, LLM unavailable 0
 - Run 2, test: pass 17/17, answered an unanswerable question 0/6, false refusals 0/11, LLM unavailable 0
+- Run 3, all: pass 42/42, answered an unanswerable question 0/16, false refusals 0/26, LLM unavailable 0
+- Run 3, dev: pass 25/25, answered an unanswerable question 0/10, false refusals 0/15, LLM unavailable 0
+- Run 3, test: pass 17/17, answered an unanswerable question 0/6, false refusals 0/11, LLM unavailable 0
 - Pass count across runs: min 42, max 42, mean 42
-- Latency p50 / max (last run): 505 ms / 1281 ms
+- Latency p50 / max (last run): 584 ms / 1215 ms
 
 | ID | Split | Category | Question | Expected | Got | Mode | Result | Reason / note |
 |---|---|---|---|---|---|---|---|---|

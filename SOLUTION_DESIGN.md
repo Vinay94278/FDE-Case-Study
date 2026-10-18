@@ -26,6 +26,8 @@ New Solstice admins ask the same questions (password resets, export limits, bill
 2. *LLM judgement*: the LLM sees numbered sentences and must return JSON: `answered` / `partial` / `not_covered`, the answer, and cited sentence IDs. Meaning-level cases ("Is SSO on Growth?" when the docs only mention Enterprise) are caught here.
 3. *Grounding verification* (code): every citation must be a sentence the LLM was actually given, and every number in the answer must appear in the cited sentences. Otherwise the draft is discarded. Deterministic, cheap, auditable.
 
+**Why three layers:** the v1 LLM evaluation answered "Is SSO available on the Growth plan?" even though the docs only mention Enterprise (E-12). The v1 extractive evaluation also answered a monthly-plan refund question the docs do not cover (E-13). A passage can be relevant without answering the question, and a plausible answer still needs grounding; v2 combines LLM judgement with code checks rather than relying on retrieval alone.
+
 **Fail-safe.** One retry on LLM failure; if it still fails, the answer is "I can't verify an answer right now", never a guess.
 
 **Extractive mode (no LLM).** Returns the best-matching sentences verbatim, so no fact can be invented. Improvements: multi-part questions are split, sentences ranked by rare-word overlap (plus embeddings when installed), and an entity check marks "partial" when the question names a plan/format/integration the passage never mentions.
@@ -36,15 +38,16 @@ New Solstice admins ask the same questions (password resets, export limits, bill
 
 ## 4. Results
 
-`data/eval_questions.json`: 25 **dev** questions (the 5 provided plus 20 written while designing), 13 **test** questions written before tuning and never used to tune, and 4 follow-up cases (LLM only).
+The v1 evaluation used one 25-question set and did not have a dev/test split. For v2, the 25-question dev set was retained for development and tuning, and 13 entirely new questions were added as a held-out test set; the test questions were not used for tuning. These are evaluation splits, not model-training data. Four follow-up cases are evaluated in LLM mode only.
 
-| Mode | Dev (25) | Test (13) | Answered an unanswerable question |
-|---|---|---|---|
-| Starter kit | 4 | 6 | 15 of 15 |
-| Extractive v2 (no LLM) | 24 | 9 | 2 of 15 |
-| LLM v1 (Groq gpt-oss-20b) | 24 | not run | 1 of 10 (the old fallback, now fixed) |
+| Version / mode | Dev (25) | Held-out test (13) | Follow-ups (4) | Overall result |
+|---|---:|---:|---:|---|
+| v1 extractive | not split | not measured | not measured | 17/25 on the single v1 set |
+| v1 LLM (Groq gpt-oss-20b) | not split | not measured | not measured | 24/25 on the single v1 set |
+| v2 extractive (no LLM) | 25/25 | 9/13 | not applicable | 34/38; the four test misses are documented in the eval results |
+| v2 LLM (Groq gpt-oss-20b) | 25/25 | 13/13 | 4/4 | 42/42 in each of 3 runs |
 
-The extractive dev/test gap (24/25 vs 9/13) is the honest cost of tuning on questions we wrote ourselves: its test misses are vocabulary it has never seen ("minimum length", "protocol") and limits the docs are silent about ("how many members can I invite"). That is the strongest argument for LLM mode. LLM v2 numbers: run `python -m eval.run_eval --runs 3`.
+The v1 extractive score of 17/25 is from its original unsplit set; v2 scored 25/25 on dev and 9/13 on the newly introduced held-out test, so the v2 test result is the check beyond the development set. The four test misses expose unseen vocabulary ("minimum length", "protocol") and limits the docs do not specify ("how many members can I invite"). The LLM was evaluated against the same 25 dev and 13 held-out questions, plus the four LLM-only follow-ups, and scored 42/42 in each of three runs. The third run's latency was 584 ms p50 / 1215 ms max. See [eval results](eval/results_extractive.md) and [LLM eval results](eval/results_llm_groq_openai_gpt-oss-20b.md).
 
 ## 5. Trade-offs and alternatives considered
 

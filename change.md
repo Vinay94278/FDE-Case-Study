@@ -91,7 +91,7 @@ This confirms the app remains stable and the updates did not break the expected 
 
 ## Extractive mode v2
 
-Glossary synonyms (`data/glossary.json`), multi-part question splitting, rare-word and embedding sentence ranking, entity check for partial coverage, and a "verbatim passage" label in the UI. Dev set 17/25 -> 24/25; held-out test set 9/13.
+Glossary synonyms (`data/glossary.json`), multi-part question splitting, rare-word and embedding sentence ranking, entity check for partial coverage, and a "verbatim passage" label in the UI. Extractive dev result: v1 17/25 on its unsplit set, v2 25/25 on the dev set; v2 held-out test result: 9/13.
 
 ## New features
 
