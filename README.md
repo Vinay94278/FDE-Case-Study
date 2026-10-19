@@ -117,6 +117,22 @@ Each pluggable part has a registry. Write the class, register a builder, set the
 
 Settings come from (highest first): real environment variables, `.env`, defaults. At startup the log shows where the LLM key came from (masked), which makes a stale exported key easy to spot. See `.env.example` for every option.
 
+## GroqCloud inference
+
+This project uses GroqCloud for hosted inference in LLM mode. The example configuration uses the model ID `openai/gpt-oss-20b`; the Groq client connects through Groq's OpenAI-compatible API. To try it, create an API key in the [Groq Console](https://console.groq.com/keys) and set `LLM_PROVIDER=groq`, `LLM_API_KEY`, and `LLM_MODEL` in `.env`.
+
+Groq provides a free plan for getting started, with usage and rate limits. Availability, model support, limits, and any charges can change, so check your Groq account and the current official pages:
+
+- [Groq API quickstart](https://console.groq.com/docs/quickstart) — first inference request.
+- [API reference](https://console.groq.com/docs/api-reference) — request and response details.
+- [OpenAI compatibility](https://console.groq.com/docs/openai) — API base URL and compatibility notes.
+- [Supported models](https://console.groq.com/docs/models) — current model IDs and availability.
+- [Rate limits](https://console.groq.com/docs/rate-limits) — free and paid plan limits; the console limits page shows the values for your organization.
+- [Plans and billing](https://console.groq.com/settings/billing/plans) — plan details and a link to current on-demand pricing.
+- [Usage dashboard](https://console.groq.com/dashboard/usage) — view API usage for your project.
+
+Keep the API key private; use `.env` locally and configure secrets through your hosting provider for deployment. Without a Groq key, set `LLM_PROVIDER=none` to run extractive mode.
+
 ## Known limitations
 
 - English only. Follow-ups need an LLM; without one each question is answered on its own.
