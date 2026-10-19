@@ -133,7 +133,7 @@ sequenceDiagram
 
 ## 3. The three layers of defence
 
-Elena's rule is enforced by three independent checks. None of them alone is enough; together each covers the others' blind spots.
+Elena's rule is enforced by three independent checks. Each layer checks a different failure mode: relevance, whether the evidence answers the question, and whether the answer is grounded.
 
 | | Layer 1: Relevance gate | Layer 2: LLM judgement | Layer 3: Grounding verification |
 |---|---|---|---|
@@ -196,21 +196,21 @@ Remaining limits, visible on the held-out test split: unseen vocabulary ("minimu
 | 2 | Starter keyword score ranked Salesforce (not covered) above password reset (covered); no threshold could separate them | Same run | BM25 plus the three layers; refusal is not based on one score |
 | 3 | Starter never refuses | Eval: 10/10 unanswerable questions answered | Layer 1 and Layer 2 refusals |
 | 4 | Doc-ID-only eval hid missing facts | Starter "found" the right doc while the fact was cut off | Eval checks status, cited docs and the key fact |
-| 5 | v1 LLM fallback answered an unanswerable question when one LLM call failed | v1 LLM eval: E-12 failed, 1 fallback | Retry once, then fail-safe refusal |
+| 5 | A failed v1 LLM call fell back to extractive search instead of refusing | v1 LLM eval recorded 1 fallback | Retry once, then fail-safe refusal |
 | 6 | Groq client lost JSON mode during the v1 fix | Code review | JSON mode restored, retry without it only if rejected |
 | 7 | Stale exported key overrode `.env`; v1 fix reversed precedence, which broke env-based deployment and isolated tests | Runtime auth errors; test design | Standard precedence plus masked "key loaded from" log line |
 | 8 | Python 3.10 syntax failed on the 3.9 sandbox | Import error | `typing.Optional`; suite tested on 3.9 and 3.12 |
 | 9 | Extractive false refusals and partial questions answered (section 4) | v1 extractive eval: 17/25 | Glossary, split, IDF ranking, entity check |
 | 10 | "Is SSO available on Growth?" retrieved the API article because "available" matched | v2 smoke test | "available" made a domain stopword |
-| 11 | Eval table hid the mode, so the fallback cause of E-12 was invisible | Reading v1 results | Mode and answer columns; `--runs`; dev/test split |
-| 12 | Eval questions written by us invite overfitting | Design review | 13 held-out test questions written before tuning, never tuned on |
+| 11 | Eval table hid the mode, making E-12's incorrect answer and the separate LLM fallback hard to distinguish | Reading v1 results | Mode and answer columns; `--runs`; dev/test split |
+| 12 | Questions I wrote for the eval could invite overfitting | Design review | 13 held-out test questions written before tuning, never tuned on |
 | 13 | Flat module structure, inconsistent error bodies | Review for production | Layered structure, one envelope, central exception handling |
 
 ---
 
 ## 6. Results
 
-The v1 evaluation was a single 25-question set, without separate development and test splits. For v2, 13 entirely new questions were added as a held-out test set alongside the 25-question dev set. The dev set was used during development and tuning; the test set was not. These are evaluation splits, not model-training data. The four follow-up cases are additional LLM-only checks, beyond the 25 + 13 core questions.
+The v1 evaluation was a single 25-question set, without separate development and test splits. For v2, 13 entirely new questions were added as a held-out test set alongside the 25-question dev set. The dev set was used during development and tuning; the test set was not. The four follow-up cases are additional LLM-only checks, beyond the 25 + 13 core questions.
 
 | Version / mode | v1 single set / v2 dev (25) | Held-out test (13) | LLM-only follow-ups (4) | Total and run consistency |
 |---|---:|---:|---:|---|
@@ -222,7 +222,7 @@ The v1 evaluation was a single 25-question set, without separate development and
 
 For v1 extractive, 4/10 unanswerable questions were answered and 3/15 answerable questions were falsely refused; v1 LLM answered 1/10 unanswerable questions and falsely refused 0/15, with one LLM failure falling back to extractive. For v2 extractive, the 2 answered-unanswerable questions were both in the held-out test set (2/5 there; 0/10 on dev); it also falsely refused 2/23 answerable questions. For v2 LLM, every run answered 0/16 unanswerable questions and falsely refused 0/26 answerable questions. Run 3's p50 / max latency was 584 ms / 1215 ms. The v1 extractive and LLM results are from their original, unsplit 25-question evaluation; no v1 held-out test result is available.
 
-The v1 extractive score of 17/25 is from its original unsplit set; v2 scored 25/25 on dev and 9/13 on the newly introduced held-out test. The four held-out misses show the limit of tuning on a small dev set: unseen vocabulary ("minimum length", "protocol") causes false refusals, and questions about limits the docs do not specify ("how many members can I invite?") can be answered with the nearest passage. LLM v2 scored 42/42 on each run, including the four follow-ups. Caveat: we wrote these 42 questions ourselves, so 42/42 is evidence the design works, not proof. Real admin questions from Elena's ticket history are the next step.
+The v1 extractive score of 17/25 is from its original unsplit set; v2 scored 25/25 on dev and 9/13 on the newly introduced held-out test. The four held-out misses show the limit of tuning on a small dev set: unseen vocabulary ("minimum length", "protocol") causes false refusals, and questions about limits the docs do not specify ("how many members can I invite?") can be answered with the nearest passage. LLM v2 scored 42/42 on each run, including the four follow-ups. I wrote the 42 evaluation questions, so these results show how the system performs on my test set—not necessarily on real admin questions. The next step is to test it against questions from Elena's support tickets.
 
 ---
 
@@ -230,9 +230,9 @@ The v1 extractive score of 17/25 is from its original unsplit set; v2 scored 25/
 
 Five alternatives were weighed against the requirement (refusal must be reliable and provable) and the constraints (6 articles growing to hundreds, small budget, must be explainable).
 
-| Option | Strength | Why not chosen now | When we would switch |
+| Option | Strength | Why not chosen now | When to switch |
 |---|---|---|---|
-| Plain RAG, refusal by prompt only | Simplest LLM design | Refusal depends on the model obeying; nothing proves it | Never for this requirement; it is our design minus two checks |
+| Plain RAG, refusal by prompt only | Simplest LLM design | Refusal depends on the model obeying; nothing proves it | Never for this requirement; it is the current design minus two checks |
 | All docs in the prompt (long context) | No retrieval misses, simplest code | Cost and latency grow with the docs; still needs verification | If the docs stay under roughly 50 pages and cost is acceptable |
 | Agentic / self-correcting RAG | Handles multi-step questions | 2-5 LLM calls per question; harder to test | If questions become multi-step troubleshooting |
 | Curated FAQ answers | Highest precision, approved wording | Manual upkeep, misses the long tail | As a layer on top: Elena said "the same handful of questions" |
@@ -296,7 +296,7 @@ flowchart LR
 | Cross-encoder reranker | Embedding cosine is a weak, uncalibrated relevance signal | After hybrid search |
 | Entailment (NLI) check | Layer 3 verifies numbers and citations, not every claim | Grounding verifier |
 | Entra ID auth + rate limits | API is open | Gateway / middleware |
-| Eval in CI on real ticket questions | Eval set written by us | GitHub Actions |
+| Eval in CI on real ticket questions | Eval set I wrote | GitHub Actions |
 
 Beyond these, likely additions are a docs-site/SharePoint connector for live content, an admin console for glossary and gaps, and token/cost tracking per question; see [SOLUTION_DESIGN.md](SOLUTION_DESIGN.md) §6.
 
@@ -324,7 +324,7 @@ Beyond these, likely additions are a docs-site/SharePoint connector for live con
 - Embeddings use `all-MiniLM-L6-v2` (small, fast, 384 dimensions) and are optional; without them search is keyword-only.
 
 **LLM**
-- JSON mode (`response_format: json_object`) plus our own parser, not strict JSON-schema structured outputs. Reasons: the same code must work across Groq, Azure and any OpenAI-compatible endpoint, and strict schema support varies by model; every field is validated by our code anyway (Layer 3). If the provider rejects JSON mode, the call is retried once without it. Strict structured outputs are a sensible upgrade where all target models support them.
+- JSON mode (`response_format: json_object`) plus a custom parser, not strict JSON-schema structured outputs. Reasons: the same code must work across Groq, Azure and any OpenAI-compatible endpoint, and strict schema support varies by model; every field is validated by code anyway (Layer 3). If the provider rejects JSON mode, the call is retried once without it. Strict structured outputs are a sensible upgrade where all target models support them.
 - The parser tolerates code fences and stray text around the JSON object.
 - Temperature 0; max 1,500 output tokens (gpt-oss reasoning uses part of the budget).
 - One retry with 0.5 s backoff; SDK retries are switched off to avoid double retries; authentication errors are not retried; 20 s timeout per call.
@@ -359,7 +359,7 @@ Beyond these, likely additions are a docs-site/SharePoint connector for live con
 
 ## 10. Known gaps
 
-- Eval questions are written by us; real admin questions are the most important missing input.
+- I wrote the eval questions; real admin questions are the most important missing input.
 - No authentication, rate limiting or overall request time budget.
 - No token or cost tracking per question.
 - The 0.35 cosine threshold is the least validated number.

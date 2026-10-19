@@ -44,7 +44,7 @@ Each run writes `eval/results_<mode>.md` with a mode column per question. v1 res
 
 ### Results snapshot
 
-v1 used a single 25-question evaluation set (no dev/test split): extractive scored 17/25 and LLM scored 24/25. For v2, the 25-question dev set was used during development and tuning, and 13 entirely new questions formed a held-out test set; these are evaluation splits, not model training data. Extractive scored 25/25 on dev and 9/13 on test (four test misses). LLM scored 25/25 on dev and 13/13 on test, plus 4/4 LLM-only follow-ups, in each of 3 runs (42/42 overall per run). The third run's latency was 584 ms p50 / 1215 ms max. Full details: [SOLUTION_DESIGN.md](SOLUTION_DESIGN.md), [ARCHITECTURE.md](ARCHITECTURE.md), and the [evaluation results](eval/).
+v1 used a single 25-question evaluation set (no dev/test split): extractive scored 17/25 and LLM scored 24/25. For v2, the 25-question dev set was used during development and tuning, and 13 entirely new questions formed a held-out test set. Extractive scored 25/25 on dev and 9/13 on test (four test misses). LLM scored 25/25 on dev and 13/13 on test, plus 4/4 LLM-only follow-ups, in each of 3 runs (42/42 overall per run). The third run's latency was 584 ms p50 / 1215 ms max. Full details: [SOLUTION_DESIGN.md](SOLUTION_DESIGN.md), [ARCHITECTURE.md](ARCHITECTURE.md), and the [evaluation results](eval/).
 
 ## API
 
