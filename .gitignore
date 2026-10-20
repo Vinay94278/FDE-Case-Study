@@ -2,3 +2,4 @@ __pycache__
 .env
 case-study-5-docs-qa-assistant
 queries.jsonl
+.venv
